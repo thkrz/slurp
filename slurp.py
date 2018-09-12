@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-import flag
 import nntplib
 import re
 import sys
 import xml.etree.ElementTree as ET
-import yenc
+
+from fnmatch import fnmatchcase
+from threading import Thread
 
 flags = {'u': '', 'p': '', 'h': '', 'ssl': False, 'threads': 11}
 
@@ -12,6 +13,28 @@ flags = {'u': '', 'p': '', 'h': '', 'ssl': False, 'threads': 11}
 def die(s) -> None:
     log(s)
     sys.exit(1)
+
+
+def fetch(segment, group):
+    host = flags['h']
+    port = None
+    if ':' in host:
+        host, port = tuple(host.split(':', 1))
+        port = int(port)
+    if flags['ssl']:
+        if not port:
+            port = 563
+        s = nntplib.NNTP_SSL(host, port)
+    else:
+        if not port:
+            port = 119
+        s = nntplib.NNTP(host, port)
+    s.login(flags['u'], flags['p'])
+    s.group(group)
+    resp, info = s.body('<{}>'.format(segment['name']))
+    with open(segment['name'], 'w') as f:
+        f.write(resp)
+    s.quit()
 
 
 def loadnzb(s) -> list:
@@ -75,35 +98,41 @@ def parse() -> bool:
 
 
 def usage() -> int:
-    log('usage: slurp [-threads n] [-ssl] [-u user [-p password]] -h host nzb [pattern]'
+    log('usage: slurp [-ssl] [-threads n] [-u user [-p password]] -h host nzb [pattern]'
         )
     sys.exit(1)
 
 
+def ydec(name):
+    pass
+
+
 def main() -> int:
     files = loadnzb(sys.argv[0])
-    host = flags['h']
-    if not host:
-        usage()
-    if flags['ssl']:
-        s = nntplib.NNTP_SSL(host)
-    else:
-        s = nntplib.NNTP(host)
-    s.login(flags['u'], flags['p'])
     for f in files:
-        s.group(f['groups'][0])
-        fnames = []
-        for part in f['segments']:
-            resp, info = s.body('<{}>'.format(part['name']))
-            with open(part['name'], 'w') as f:
-                f.write(resp)
-            fnames.append(part['name'])
-        yenc.decode(fnames)
-    s.quit()
+        if len(sys.argv) > 1 and not fnmatchcase(f['name'], sys.argv[1]):
+            continue
+        n = len(f['segments'])
+        j = 0
+        while n > 0:
+            threads = []
+            for i in range(min(n, flags['threads'])):
+                threads.append(
+                    Thread(
+                        target=fetch, args=(f['segments'][j], f['groups'][0])))
+                j += 1
+            for t in threads:
+                t.start()
+            for t in threads:
+                t.join()
+            n -= j
+        for segment in f['segments']:
+            ydec(segment)
+
     return 0
 
 
 if __name__ == '__main__':
-    if parse() or len(sys.argv) < 2:
+    if parse() or len(sys.argv) == 0 or len(sys.argv) > 2 or not flags['h']:
         usage()
     sys.exit(main())
