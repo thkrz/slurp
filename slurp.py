@@ -9,14 +9,13 @@ import zlib
 
 from fnmatch import fnmatchcase
 from numba import jit, byte
-from pathlib import Path
 from threading import Thread
 
 flags = {'u': '', 'p': '', 'h': '', 'ssl': False, 'threads': 11, 'list': False}
 
 
-def bytetostr(size):
-    q = ['', 'K', 'M', 'G']
+def bytetostr(size) -> str:
+    q = ['', 'K', 'M', 'G', 'T']
     i = 0
     while size > 1024:
         size /= 1024
@@ -31,7 +30,7 @@ def die(s) -> None:
     sys.exit(1)
 
 
-def fetch(segment, group):
+def fetch(segment, groups) -> None:
     host = flags['h']
     port = None
     if ':' in host:
@@ -46,11 +45,13 @@ def fetch(segment, group):
             port = 119
         s = nntplib.NNTP(host, port)
     s.login(flags['u'], flags['p'])
-    s.group(group)
-    try:
-        s.body('<{}>'.format(segment['name']), file=segment['name'])
-    except nntplib.NNTPTemporaryError:
-        pass
+    for group in groups:
+        try:
+            s.group(group)
+            s.body('<{}>'.format(segment['name']), file=segment['name'])
+        except nntplib.NNTPTemporaryError:
+            continue
+        break
     s.quit()
 
 
@@ -123,7 +124,7 @@ def usage() -> int:
     sys.exit(1)
 
 
-def ydec(name):
+def ydec(name) -> None:
     @jit(byte[:](byte[:]))
     def decode(buf):
         data = bytearray()
@@ -145,7 +146,7 @@ def ydec(name):
             data.append(dec)
         return data
 
-    def keywords(line):
+    def keywords(line) -> dict:
         words = line.decode('utf-8').split('=')
         key = words[1].split()[1]
         d = {}
@@ -173,10 +174,11 @@ def ydec(name):
         j += 1
     trailer = keywords(lines[j])
     data = decode(b''.join(lines[i:j]))
-    crc = zlib.crc32(data) & 0xffffffff
-    if crc == int(trailer['pcrc32' if multipart else 'crc32'], 16):
-        with open(header['name'], 'ab'
-                  if multipart and header['part'] != 1 else 'wb') as f:
+    crc1 = zlib.crc32(data) & 0xffffffff
+    crc2 = int(trailer['pcrc32' if multipart else 'crc32'], 16)
+    if crc1 == crc2:
+        mode = 'ab' if multipart and int(header['part']) != 1 else 'wb'
+        with open(header['name'], mode) as f:
             f.write(data)
 
 
@@ -198,41 +200,30 @@ def main() -> int:
                 f['date']) < 1.577e7 else '%b %e %Y'
             date = time.strftime(fmt, f['date'])
             print('{} {:>12} {}'.format(bytetostr(size), date, f['name']))
-        print('total ' + bytetostr(total))
+        if len(files) > 1:
+            print('total ' + bytetostr(total))
         return 0
         # not reached
 
+    num_threads = flags['threads']
     for f in files:
-        num_threads = flags['threads']
-        n = len(f['segments'])
-
-        log(f['name'])
-        log('  downloading {} bytes with {} threads...'.format(
-            f['bytes'], num_threads),
-            end='')
-
         j = 0
+        n = len(f['segments'])
         while n > 0:
             threads = []
             for i in range(min(n, num_threads)):
                 threads.append(
-                    Thread(
-                        target=fetch, args=(f['segments'][j], f['groups'][0])))
+                    Thread(target=fetch, args=(f['segments'][j], f['groups'])))
                 j += 1
             for t in threads:
                 t.start()
             for t in threads:
                 t.join()
             n -= num_threads
-
-        log('finished')
-
         n = len(f['segments'])
         for i, segment in enumerate(f['segments']):
-            log('  decoding {:3d} from {:3d} segments'.format(i + 1, n), end='\r')
             ydec(segment['name'])
             os.remove(segment['name'])
-        log('')
     return 0
 
 
