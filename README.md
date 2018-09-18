@@ -35,3 +35,8 @@ The following operands are supported
   <dd>File to be downloaded from NZB, can use UNIX globbing</dd>
 </dl>
 
+# Installation
+Copy the script to a location in your path and make it executable.
+
+# Bugs
+There is no feedback what is happening.
