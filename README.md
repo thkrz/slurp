@@ -12,7 +12,7 @@ The following options are supported
 
 <dl>
   <dt><strong>-list</strong></dt>
-  <dd>List files in NZB</dd>
+  <dd>List files in NZB, other options are ignored</dd>
   <dt><strong>-ssl</strong></dt>
   <dd> Turn on ssl support (Default: off)</dd>
   <dt><strong>-threads</strong> number</dt>
