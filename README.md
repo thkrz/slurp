@@ -3,9 +3,9 @@ slurp - nzb downloader
 # Synopsis
 `$ slurp [-ssl] [-threads num] [-u user [-p password]] -h host[:port] nzb [file...]`
 
-`$ slurp -list nzb`
+`$ slurp -list nzb [file...]`
 # Description
-The *slurp* utility reads a *nzb* file and downloads all files, or only the ones
+The *slurp* utility reads a *nzb* file and downloads all its files, or only the ones
 specified in *file*.
 # Options
 The following options are supported
@@ -32,11 +32,9 @@ The following operands are supported
   <dt>nzb</dt>
   <dd>NZB file</dd>
   <dt>file</dt>
-  <dd>File to be downloaded from NZB, can use UNIX globbing</dd>
+  <dd>File to be downloaded or listed from NZB, can use UNIX globbing</dd>
 </dl>
 
 # Installation
 Copy the script to a location in your path and make it executable.
-
-# Bugs
-There is no feedback what is happening.
+For convenience you can edit the default option values in the script.
