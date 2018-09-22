@@ -37,4 +37,7 @@ The following operands are supported
 
 # Installation
 Copy the script to a location in your path and make it executable.
+
 For convenience you can edit the default option values in the script.
+
+*slurp* requires *numba*.
