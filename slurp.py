@@ -119,7 +119,7 @@ def parse() -> bool:
 
 
 def usage() -> int:
-    log('usage: slurp [-ssl] [-threads n] [-u user [-p password]] -h host nzb [file...]'
+    log('usage: slurp [-ssl] [-threads n] [-u user [-p password]] -h host[:port] nzb [file...]'
         )
     sys.exit(1)
 
