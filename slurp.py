@@ -174,12 +174,16 @@ def ydec(name) -> None:
         j += 1
     trailer = keywords(lines[j])
     data = decode(b''.join(lines[i:j]))
-    crc1 = zlib.crc32(data) & 0xffffffff
-    crc2 = int(trailer['pcrc32' if multipart else 'crc32'], 16)
-    if crc1 == crc2:
-        mode = 'ab' if multipart and int(header['part']) != 1 else 'wb'
-        with open(header['name'], mode) as f:
-            f.write(data)
+    key = 'pcrc32' if multipart else 'crc32'
+    if key in trailer.keys():
+        crc1 = zlib.crc32(data) & 0xffffffff
+        crc2 = int(trailer[key], 16)
+        if not crc1 == crc2:
+            return
+        # not reached
+    mode = 'ab' if multipart and int(header['part']) != 1 else 'wb'
+    with open(header['name'], mode) as f:
+        f.write(data)
 
 
 def main() -> int:
