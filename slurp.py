@@ -9,9 +9,11 @@ import zlib
 
 from fnmatch import fnmatchcase
 from numba import jit, byte
+from queue import Queue
 from threading import Thread
 
 flags = {'u': '', 'p': '', 'h': '', 'ssl': False, 'threads': 11, 'list': False}
+watchdog = Queue()
 
 
 def bytetostr(size) -> str:
@@ -25,6 +27,11 @@ def bytetostr(size) -> str:
     return '{:3.0f}{}'.format(size, q[i])
 
 
+def clean():
+    while not watchdog.empty():
+        os.remove(watchdog.get())
+
+
 def die(s) -> None:
     log(s)
     sys.exit(1)
@@ -36,23 +43,27 @@ def fetch(segment, groups) -> None:
     if ':' in host:
         host, port = tuple(host.split(':', 1))
         port = int(port)
-    if flags['ssl']:
-        if not port:
-            port = 563
-        s = nntplib.NNTP_SSL(host, port)
-    else:
-        if not port:
-            port = 119
-        s = nntplib.NNTP(host, port)
-    s.login(flags['u'], flags['p'])
-    for group in groups:
-        try:
-            s.group(group)
-            s.body('<{}>'.format(segment['name']), file=segment['name'])
-        except nntplib.NNTPTemporaryError:
-            continue
-        break
-    s.quit()
+    try:
+        if flags['ssl']:
+            if not port:
+                port = 563
+            s = nntplib.NNTP_SSL(host, port)
+        else:
+            if not port:
+                port = 119
+            s = nntplib.NNTP(host, port)
+        s.login(flags['u'], flags['p'])
+        for group in groups:
+            try:
+                s.group(group)
+                s.body('<{}>'.format(segment), file=segment)
+                watchdog.put(segment)
+            except nntplib.NNTPTemporaryError:
+                continue
+            break
+        s.quit()
+    except nntplib.NNTPPermanentError as e:
+        log('slurp: nntp: ' + str(e))
 
 
 def loadnzb(s) -> list:
@@ -216,22 +227,27 @@ def main() -> int:
         while n > 0:
             threads = []
             for i in range(min(n, num_threads)):
-                threads.append(
-                    Thread(target=fetch, args=(f['segments'][j], f['groups'])))
-                j += 1
-            for t in threads:
+                t = Thread(
+                    target=fetch, args=(f['segments'][j]['name'], f['groups']))
                 t.start()
+                threads.append(t)
+                j += 1
             for t in threads:
                 t.join()
             n -= num_threads
-        n = len(f['segments'])
-        for i, segment in enumerate(f['segments']):
+        if watchdog.empty():
+            return 1
+        for segment in f['segments']:
             ydec(segment['name'])
-            os.remove(segment['name'])
+        clean()
     return 0
 
 
 if __name__ == '__main__':
     if parse() or len(sys.argv) == 0:
         usage()
-    sys.exit(main())
+    try:
+        main()
+    except KeyboardInterrupt:
+        clean()
+    sys.exit(0)
