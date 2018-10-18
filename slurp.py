@@ -12,7 +12,7 @@ from numba import jit, byte
 from queue import Queue
 from threading import Thread
 
-flags = {'u': '', 'p': '', 'h': '', 'ssl': False, 'threads': 11, 'list': False}
+flags = {'u': '', 'p': '', 'h': '', 'ssl': False, 'threads': 10, 'list': False}
 watchdog = Queue()
 
 
@@ -56,8 +56,8 @@ def fetch(segment, groups) -> None:
         for group in groups:
             try:
                 s.group(group)
-                s.body('<{}>'.format(segment), file=segment)
                 watchdog.put(segment)
+                s.body('<{}>'.format(segment), file=segment)
             except nntplib.NNTPTemporaryError:
                 continue
             break
