@@ -129,10 +129,9 @@ def parse():
 
 
 def usage():
-    log(
+    die(
         "usage: slurp [-ssl] [-threads n] [-u user [-p password]] -h host[:port] nzb [file...]"
     )
-    sys.exit(1)
 
 
 def ydec(name):
@@ -225,6 +224,8 @@ def main():
     for f in files:
         j = 0
         n = len(f["segments"])
+        total = f["bytes"]
+        pend = 0
         while n > 0:
             threads = []
             for i in range(min(n, num_threads)):
@@ -232,8 +233,10 @@ def main():
                 t.start()
                 threads.append(t)
                 j += 1
+                pend += f["segments"][j]["bytes"]
             for t in threads:
                 t.join()
+            log(f"\r{f['name']}: {100.0*pend/total:3.0f} %", end="")
             n -= num_threads
         if watchdog.empty():
             return 1
