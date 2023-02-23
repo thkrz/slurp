@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"path"
-	"regexp"
 	"strings"
 	"sync"
 )
@@ -19,33 +18,12 @@ func CutSuffix(s, suffix string) (string, bool) {
 	return s[:i], true
 }
 
-type pattern []*regexp.Regexp
-
-func (p *pattern) MatchString(s string) bool {
-	for _, e := range *p {
-		if e.MatchString(s) {
-			return true
-		}
-	}
-	return false
-}
-
-func (p *pattern) String() string {
-	return ""
-}
-
-func (p *pattern) Set(value string) error {
-	*p = append(*p, regexp.MustCompilePOSIX(value))
-	return nil
-}
-
 var host string
-var match pattern
 var num int
+var par2flag bool
 var pass string
 var ssl bool
 var user string
-var vflag bool
 
 var wg sync.WaitGroup
 
@@ -88,8 +66,7 @@ func init() {
 	flag.StringVar(&pass, "pass", "", "password")
 	flag.BoolVar(&ssl, "ssl", false, "use ssl encryption")
 	flag.IntVar(&num, "threads", 1, "number of threads")
-	flag.BoolVar(&vflag, "v", false, "select files not matching any of the specified patterns")
-	flag.Var(&match, "e", "specify one or more patterns to be used for file selection")
+	flag.BoolVar(&par2flag, "par2", false, "download par2 files")
 }
 
 func main() {
@@ -113,8 +90,8 @@ func main() {
 	N := len(obj.Files)
 	for i, f := range obj.Files {
 		name := f.Name()
-		isMatch := match.MatchString(name)
-		if (!isMatch && !vflag) || (isMatch && vflag) {
+		isPar2 := strings.HasSuffix(name, ".par2")
+		if (isPar2 && !par2flag) || (!isPar2 && par2flag) {
 			continue
 		}
 		log.Printf("%d/%d (%s)\n", i+1, N, name)
