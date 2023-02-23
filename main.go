@@ -2,21 +2,14 @@ package main
 
 import (
 	"flag"
-  "fmt"
+	"fmt"
 	"log"
 	"os"
 	"path"
+	"regexp"
 	"strings"
 	"sync"
 )
-
-var host string
-var user string
-var pass string
-var ssl bool
-var num int
-
-var wg sync.WaitGroup
 
 func CutSuffix(s, suffix string) (string, bool) {
 	i := strings.LastIndex(s, suffix)
@@ -25,6 +18,36 @@ func CutSuffix(s, suffix string) (string, bool) {
 	}
 	return s[:i], true
 }
+
+type pattern []*regexp.Regexp
+
+func (p *pattern) MatchString(s string) bool {
+	for _, e := range *p {
+		if e.MatchString(s) {
+			return true
+		}
+	}
+	return false
+}
+
+func (p *pattern) String() string {
+	return ""
+}
+
+func (p *pattern) Set(value string) error {
+	*p = append(*p, regexp.MustCompilePOSIX(value))
+	return nil
+}
+
+var host string
+var match pattern
+var num int
+var pass string
+var ssl bool
+var user string
+var vflag bool
+
+var wg sync.WaitGroup
 
 func fetch(s []Segment, g []string) {
 	defer wg.Done()
@@ -58,13 +81,15 @@ func fetch(s []Segment, g []string) {
 
 func init() {
 	log.SetFlags(0)
-  log.SetPrefix("slurp: ")
+	log.SetPrefix("slurp: ")
 
 	flag.StringVar(&host, "host", "", "nntp server address")
 	flag.StringVar(&user, "user", "", "username")
 	flag.StringVar(&pass, "pass", "", "password")
 	flag.BoolVar(&ssl, "ssl", false, "use ssl encryption")
 	flag.IntVar(&num, "threads", 1, "number of threads")
+	flag.BoolVar(&vflag, "v", false, "select files not matching any of the specified patterns")
+	flag.Var(&match, "e", "specify one or more patterns to be used for file selection")
 }
 
 func main() {
@@ -84,11 +109,16 @@ func main() {
 	if err = os.Chdir(before); err != nil {
 		log.Fatal(err)
 	}
-  fmt.Println(before)
+	fmt.Println(before)
 	N := len(obj.Files)
 	for i, f := range obj.Files {
-		log.Printf("%d/%d (%s)\n", i+1, N, f.Name())
-		if _, err = os.Stat(f.Name()); err == nil {
+		name := f.Name()
+		isMatch := match.MatchString(name)
+		if (!isMatch && !vflag) || (isMatch && vflag) {
+			continue
+		}
+		log.Printf("%d/%d (%s)\n", i+1, N, name)
+		if _, err = os.Stat(name); err == nil {
 			continue
 		}
 		n := len(f.Segments)
