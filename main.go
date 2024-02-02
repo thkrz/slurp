@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-  "fmt"
+	"fmt"
 	"log"
 	"os"
 	"sync"
