@@ -38,7 +38,7 @@ type File struct {
 }
 
 func (f *File) Decode() error {
-	var fout *os.File
+	var fout *os.File = nil
 
 	f.Sort()
 	for _, s := range f.Segments {
@@ -51,17 +51,20 @@ func (f *File) Decode() error {
 		}
 		defer fin.Close()
 		scanner := bufio.NewScanner(fin)
-		if scanner.Scan() {
+		for scanner.Scan() {
 			hdr, err := ParseKeywordLine(scanner.Text())
 			if err != nil {
 				return err
 			}
-			fout, err = os.OpenFile(hdr["name"], os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-			if err != nil {
-				return err
+			if fout == nil {
+				fout, err = os.OpenFile(hdr["name"], os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+				if err != nil {
+					return err
+				}
+				defer fout.Close()
 			}
 			if _, exists := hdr["part"]; !exists {
-				scanner.Scan()
+				break
 			}
 		}
 		for scanner.Scan() {
@@ -114,9 +117,19 @@ func (f *File) Sort() {
 
 type BySuffix []File
 
-func (by BySuffix) Len() int           { return len(by) }
-func (by BySuffix) Less(i, j int) bool { return !strings.HasSuffix(by[i].Name(), ".par2") }
-func (by BySuffix) Swap(i, j int)      { by[i], by[j] = by[j], by[i] }
+func (by BySuffix) Len() int { return len(by) }
+func (by BySuffix) Less(i, j int) bool {
+	a := strings.HasSuffix(by[i].Name(), ".par2")
+	b := strings.HasSuffix(by[j].Name(), ".par2")
+	if !a && b {
+		return true
+	}
+	if a == b {
+		return by[i].Name() < by[j].Name()
+	}
+	return false
+}
+func (by BySuffix) Swap(i, j int) { by[i], by[j] = by[j], by[i] }
 
 type Segment struct {
 	Bytes  uint64 `xml:"bytes,attr"`

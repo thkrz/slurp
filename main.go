@@ -58,8 +58,8 @@ func progress(size uint64) {
 		n := <-ch
 		total += n
 		perc := (100 * total) / size
-		speed := float64(total) / float64(time.Since(st).Microseconds())
-		fmt.Fprintf(os.Stderr, "%12d\t%3d%%\t%5.1f MB/s\r", total, perc, speed)
+		speed := float64(total) / time.Since(st).Seconds()
+		fmt.Fprintf(os.Stderr, "%12d\t%3d%%\t%s/s\r", total, perc, FormatSize(speed))
 	}
 	os.Stderr.WriteString("\n")
 }
@@ -89,11 +89,7 @@ func main() {
 	}
 	N := len(obj.Files)
 	for i, f := range obj.Files {
-		name := f.Name()
-		fmt.Fprintf(os.Stderr, "[%d/%d] %s\n", i+1, N, name)
-		// if _, err = os.Stat(name); err == nil {
-		// 	continue
-		// }
+		fmt.Fprintf(os.Stderr, "[%d/%d] %s\n", i+1, N, f.Name())
 		n := len(f.Segments)
 		k := (n + num - 1) / num
 		for j := 0; j < n; j += k {
@@ -106,11 +102,13 @@ func main() {
 		}
 		go progress(f.Size())
 		wg.Wait()
+		os.Stderr.WriteString("decoding...")
 		func() {
 			defer f.Purge()
 			if err := f.Decode(); err != nil {
 				log.Panic(err)
 			}
 		}()
+		os.Stderr.WriteString("done\n")
 	}
 }
