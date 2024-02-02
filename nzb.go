@@ -33,10 +33,8 @@ type File struct {
 }
 
 func (f *File) Decode() error {
-	fout, err := os.OpenFile(f.Name(), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return err
-	}
+	var fout *os.File
+
 	f.Sort()
 	for _, s := range f.Segments {
 		fin, err := os.Open(s.Name)
@@ -48,10 +46,23 @@ func (f *File) Decode() error {
 		}
 		defer fin.Close()
 		scanner := bufio.NewScanner(fin)
+		if scanner.Scan() {
+			hdr, err := ParseKeywordLine(scanner.Text())
+			if err != nil {
+				return err
+			}
+			fout, err = os.OpenFile(hdr["name"], os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+			if err != nil {
+				return err
+			}
+			if _, exists := hdr["part"]; !exists {
+				scanner.Scan()
+			}
+		}
 		for scanner.Scan() {
 			data := scanner.Bytes()
 			if !IsData(data) {
-				continue
+				break
 			}
 			if _, err = fout.Write(Decode(data)); err != nil {
 				return err

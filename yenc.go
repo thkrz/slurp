@@ -37,21 +37,26 @@ func IsData(data []byte) bool {
 	return len(data) < 2 || data[0] != '=' || data[1] != 'y'
 }
 
-func Params(s string) (map[string]string, error) {
-	i := strings.Index(s, " ")
-	if i < 0 {
+func ParseKeywordLine(s string) (map[string]string, error) {
+	words := make(map[string]string)
+	for {
+		i := strings.LastIndex(s, "=")
+		if i == 0 {
+			words["type"] = s[2:]
+			break
+		}
+		v := s[i+1:]
+		s = s[:i]
+		i = strings.LastIndex(s, " ")
+		if i < 0 {
+      return nil, errors.New("invalid keyword line")
+		}
+		k := s[i+1:]
+		s = s[:i]
+		words[k] = v
+	}
+	if len(words) == 0 {
 		return nil, errors.New("invalid keyword line")
 	}
-	p := make(map[string]string)
-	p["type"] = s[2:i]
-	q := strings.Split(s[i+1:], "=")
-	for i = 0; i < len(q)-1; i++ {
-		k := strings.TrimSpace(q[i])
-		v := strings.TrimSpace(q[i+1])
-		p[k] = v
-	}
-	if len(p) == 0 {
-		return nil, errors.New("invalid keyword line")
-	}
-	return p, nil
+	return words, nil
 }
