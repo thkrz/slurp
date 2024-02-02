@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"sync"
+	"time"
 )
 
 var host string
@@ -14,7 +15,7 @@ var pass string
 var ssl bool
 var user string
 
-var ch chan int = make(chan int)
+var ch chan uint64
 var wg sync.WaitGroup
 
 func fetch(s []Segment, g []string) {
@@ -49,12 +50,18 @@ func fetch(s []Segment, g []string) {
 	}
 }
 
-func progress(size int) {
-	for total := 0; total < size; {
+func progress(size uint64) {
+	var total uint64
+
+	st := time.Now()
+	for total < size {
 		n := <-ch
 		total += n
-		fmt.Fprintf(os.Stderr, "%d/%d\r", total, size)
+		perc := (100 * total) / size
+		speed := float64(total) / float64(time.Since(st).Microseconds())
+		fmt.Fprintf(os.Stderr, "%12d\t%3d%%\t%5.1f MB/s\r", total, perc, speed)
 	}
+	os.Stderr.WriteString("\n")
 }
 
 func init() {
@@ -66,6 +73,8 @@ func init() {
 	flag.StringVar(&pass, "pass", "", "password")
 	flag.BoolVar(&ssl, "ssl", false, "use ssl encryption")
 	flag.IntVar(&num, "threads", 1, "number of threads")
+
+	ch = make(chan uint64)
 }
 
 func main() {
@@ -81,7 +90,7 @@ func main() {
 	N := len(obj.Files)
 	for i, f := range obj.Files {
 		name := f.Name()
-		log.Printf("%d/%d (%s)\n", i+1, N, name)
+		fmt.Fprintf(os.Stderr, "[%d/%d] %s\n", i+1, N, name)
 		// if _, err = os.Stat(name); err == nil {
 		// 	continue
 		// }

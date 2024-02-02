@@ -49,7 +49,7 @@ func ParseKeywordLine(s string) (map[string]string, error) {
 		s = s[:i]
 		i = strings.LastIndex(s, " ")
 		if i < 0 {
-      return nil, errors.New("invalid keyword line")
+			return nil, errors.New("invalid keyword line")
 		}
 		k := s[i+1:]
 		s = s[:i]
