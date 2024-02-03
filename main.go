@@ -59,7 +59,8 @@ func progress(size uint64) {
 		total += n
 		perc := (100 * total) / size
 		speed := float64(total) / time.Since(st).Seconds()
-		fmt.Fprintf(os.Stderr, "%12d\t%3d%%\t%s/s\r", total, perc, FormatSize(speed))
+		fmt.Fprintf(os.Stderr, "%12d\t%3d%%\t%s/s\r", total, perc,
+			FormatSize(speed))
 	}
 	os.Stderr.WriteString("\n")
 }
