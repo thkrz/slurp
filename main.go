@@ -102,13 +102,11 @@ func main() {
 		}
 		go progress(f.Size())
 		wg.Wait()
-		os.Stderr.WriteString("decoding...")
 		func() {
 			defer f.Purge()
 			if err := f.Decode(); err != nil {
 				log.Panic(err)
 			}
 		}()
-		os.Stderr.WriteString("done\n")
 	}
 }
