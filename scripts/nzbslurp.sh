@@ -27,11 +27,11 @@ nzbget() {
 	cd ..
 }
 
-mflag=0
+mflag=false
 while getopts ":m" opt; do
 	case $opt in
 	m)
-		mflag=1
+		mflag=true
 		;;
 	?)
 		usage
@@ -45,7 +45,7 @@ if [ $# -eq 1 ]; then
 	exit $?
 fi
 
-if mflag; then
+if $mflag; then
 	inotifywait -m $path -e create -e moved_to |
 		while read -r d a f; do
 			if [ ! "${f: -4}" = ".nzb" ]; then
