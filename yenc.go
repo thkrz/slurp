@@ -5,8 +5,9 @@ import (
 	"strings"
 )
 
-func Decode(src []byte) []byte {
-	var dst []byte
+var ErrInvalidKeywordLine = errors.New("invalid keyword line")
+
+func Decode(src []byte) (dst []byte) {
 	var dec byte
 
 	esc := false
@@ -30,7 +31,7 @@ func Decode(src []byte) []byte {
 		}
 		dst = append(dst, dec)
 	}
-	return dst
+	return
 }
 
 func IsData(data []byte) bool {
@@ -45,18 +46,21 @@ func ParseKeywordLine(s string) (map[string]string, error) {
 			words["type"] = s[2:]
 			break
 		}
+		if i < 0 {
+			return nil, ErrInvalidKeywordLine
+		}
 		v := s[i+1:]
 		s = s[:i]
 		i = strings.LastIndex(s, " ")
 		if i < 0 {
-			return nil, errors.New("invalid keyword line")
+			return nil, ErrInvalidKeywordLine
 		}
 		k := s[i+1:]
 		s = s[:i]
 		words[k] = v
 	}
 	if len(words) == 0 {
-		return nil, errors.New("invalid keyword line")
+		return nil, ErrInvalidKeywordLine
 	}
 	return words, nil
 }

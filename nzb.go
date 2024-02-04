@@ -13,13 +13,11 @@ type Nzb struct {
 	Info  []Meta `xml:"head>meta"`
 }
 
-func (nzb *Nzb) Size() uint64 {
-	var n uint64
-
+func (nzb *Nzb) Size() (n uint64) {
 	for _, f := range nzb.Files {
 		n += f.Size()
 	}
-	return n
+	return
 }
 
 func (nzb *Nzb) Sort() {
@@ -57,7 +55,8 @@ func (f *File) Decode() error {
 				return err
 			}
 			if fout == nil {
-				fout, err = os.OpenFile(hdr["name"], os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+				fout, err = os.OpenFile(hdr["name"],
+					os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 				if err != nil {
 					return err
 				}
@@ -102,13 +101,11 @@ func (f *File) Purge() error {
 	return nil
 }
 
-func (f *File) Size() uint64 {
-	var n uint64
-
+func (f *File) Size() (n uint64) {
 	for _, s := range f.Segments {
 		n += s.Bytes
 	}
-	return n
+	return
 }
 
 func (f *File) Sort() {
@@ -152,6 +149,6 @@ func OpenNzb(name string) (*Nzb, error) {
 	if err := xml.Unmarshal([]byte(data), &nzb); err != nil {
 		return nil, err
 	}
-	nzb.Sort()
+	// nzb.Sort()
 	return nzb, nil
 }
