@@ -21,8 +21,8 @@ nzbget() {
 	if [ ! -d "$targ" ]; then
 		mkdir "$targ"
 	fi
-	cd $targ
-	$cmd ../$1
+	cd "$targ"
+	$cmd ../"$1"
 	unpack
 	cd ..
 }
@@ -41,7 +41,7 @@ done
 shift $((OPTIND - 1))
 
 if [ $# -eq 1 ]; then
-	nzbget $1
+	nzbget "$1"
 	exit $?
 fi
 
@@ -55,6 +55,6 @@ if $mflag; then
 		done
 else
 	for f in $path/*.nzb; do
-		nzbget $f
+		nzbget "$f"
 	done
 fi
