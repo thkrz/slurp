@@ -22,7 +22,7 @@ nzbget() {
 		mkdir "$targ"
 	fi
 	cd $targ
-	$cmd $1
+	$cmd ../$1
 	unpack
 	cd ..
 }
