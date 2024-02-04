@@ -51,21 +51,40 @@ func fetch(s []Segment, g []string) {
 }
 
 func progress(size uint64) {
+	var si_units = []string{"", "kB", "MB", "GB", "TB", "PB"}
+	var args []interface{}
 	var total uint64
 
+	eta := func(n uint64) {
+		m := n / 60
+		s := n - m*60
+		args[4] = m
+		args[5] = s
+	}
+
+	rate := func(r float64) {
+		i := 0
+		for ; r > 1000.0; i++ {
+			r /= 1000.0
+		}
+		args[2] = r
+		args[3] = si_units[i]
+	}
+
+	args = make([]interface{}, 6)
 	st := time.Now()
 	for total < size {
 		n := <-ch
 		total += n
-		perc := (100 * total) / size
+		args[0] = total
+		args[1] = (100 * total) / size
 		speed := float64(total) / time.Since(st).Seconds()
-		eta := float64(size-total) / speed
+		rate(speed)
+		eta((size - total) / uint64(speed))
 
-		sp, su := SIUnit(speed)
-		h, m, s := TimeUnit(uint64(eta))
-
-		fmt.Fprintf(os.Stderr, "%12d\t%3d%%\t%5.1f %s/s\t%02d:%02d:%02d\r",
-			total, perc, sp, su, h, m, s)
+		fmt.Fprintf(os.Stderr,
+			"%12d\t%3d%%\t%5.1f %s/s\t%3d:%02d\r",
+			args...)
 	}
 	os.Stderr.WriteString("\n")
 }
