@@ -55,9 +55,9 @@ func progress(size uint64) {
 	var args []interface{}
 	var total uint64
 
-	eta := func(n uint64) {
-		m := n / 60
-		s := n - m*60
+	eta := func(n float64) {
+		m := uint64(n / 60.0)
+		s := uint64(n) - m*60
 		args[4] = m
 		args[5] = s
 	}
@@ -80,7 +80,7 @@ func progress(size uint64) {
 		args[1] = (100 * total) / size
 		speed := float64(total) / time.Since(st).Seconds()
 		rate(speed)
-		eta((size - total) / uint64(speed))
+		eta(float64(size-total) / speed)
 
 		fmt.Fprintf(os.Stderr,
 			"%12d\t%3d%%\t%5.1f %s/s\t%3d:%02d\r",
