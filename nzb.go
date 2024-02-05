@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/xml"
+	"filepath"
 	"os"
 	"sort"
 	"strings"
@@ -11,6 +12,16 @@ import (
 type Nzb struct {
 	Files []File `xml:"file"`
 	Info  []Meta `xml:"head>meta"`
+}
+
+func (nzb *Nzb) Glob(pattern string) (fl []File) {
+	for _, f := range nzb.Files {
+		s := f.Name()
+		if sel, err := filepath.Match(pattern, s); sel {
+			fl = append(fl, f)
+		}
+	}
+	return
 }
 
 func (nzb *Nzb) Size() (n uint64) {
