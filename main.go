@@ -53,6 +53,7 @@ func fetch(s []Segment, g []string) {
 func progress(size uint64) {
 	var si_units = []string{"", "kB", "MB", "GB", "TB", "PB"}
 	var args []interface{}
+	var sync float64
 	var total uint64
 
 	eta := func(n float64) {
@@ -76,9 +77,14 @@ func progress(size uint64) {
 	for total < size {
 		n := <-ch
 		total += n
+		since := time.Since(st).Seconds()
+		if (since - sync) < 1 {
+			continue
+		}
+		sync = since
 		args[0] = total
 		args[1] = (100 * total) / size
-		speed := float64(total) / time.Since(st).Seconds()
+		speed := float64(total) / since
 		rate(speed)
 		eta(float64(size-total) / speed)
 
