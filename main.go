@@ -52,7 +52,7 @@ func fetch(s []Segment, g []string) {
 
 func progress(size uint64) {
 	var si_units = []string{"", "kB", "MB", "GB", "TB", "PB"}
-	var sync float64 = 1
+	var sync float64 = -1
 	var args []interface{}
 	var total uint64
 
