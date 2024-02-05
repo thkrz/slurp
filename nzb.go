@@ -20,10 +20,6 @@ func (nzb *Nzb) Size() (n uint64) {
 	return
 }
 
-func (nzb *Nzb) Sort() {
-	sort.Sort(BySuffix(nzb.Files))
-}
-
 type Meta struct {
 	Type  string `xml:"type,attr"`
 	Value string `xml:",chardata"`
@@ -112,22 +108,6 @@ func (f *File) Sort() {
 	sort.Sort(ByNumber(f.Segments))
 }
 
-type BySuffix []File
-
-func (by BySuffix) Len() int { return len(by) }
-func (by BySuffix) Less(i, j int) bool {
-	a := strings.HasSuffix(by[i].Name(), ".par2")
-	b := strings.HasSuffix(by[j].Name(), ".par2")
-	if !a && b {
-		return true
-	}
-	if a == b {
-		return by[i].Name() < by[j].Name()
-	}
-	return false
-}
-func (by BySuffix) Swap(i, j int) { by[i], by[j] = by[j], by[i] }
-
 type Segment struct {
 	Bytes  uint64 `xml:"bytes,attr"`
 	Number int    `xml:"number,attr"`
@@ -149,6 +129,5 @@ func OpenNzb(name string) (*Nzb, error) {
 	if err := xml.Unmarshal([]byte(data), &nzb); err != nil {
 		return nil, err
 	}
-	// nzb.Sort()
 	return nzb, nil
 }
