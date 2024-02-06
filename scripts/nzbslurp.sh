@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 user=
 pass=
@@ -13,6 +13,7 @@ usage() {
 }
 
 unpack() {
+  # fancy unpacking
 	unrar x $(ls .part*.rar | head -n 1)
 }
 
