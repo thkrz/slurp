@@ -11,8 +11,7 @@ slurp - nzb downloader
 # OPTIONS
 
 *-host* _address_
-
-	NNTP server address
+					NNTP server address
 
 # AUTHORS
 
