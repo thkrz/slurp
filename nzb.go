@@ -3,8 +3,8 @@ package main
 import (
 	"bufio"
 	"encoding/xml"
-	"filepath"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 )
@@ -14,11 +14,11 @@ type Nzb struct {
 	Info  []Meta `xml:"head>meta"`
 }
 
-func (nzb *Nzb) Glob(pattern string) (fl []File) {
+func (nzb *Nzb) Glob(pattern string, invert bool) (l []File) {
 	for _, f := range nzb.Files {
 		s := f.Name()
-		if sel, err := filepath.Match(pattern, s); sel {
-			fl = append(fl, f)
+		if sel, _ := filepath.Match(pattern, s); !invert == sel {
+			l = append(l, f)
 		}
 	}
 	return
@@ -59,7 +59,7 @@ func (f *File) Decode() error {
 		for scanner.Scan() {
 			hdr, err := ParseKeywordLine(scanner.Text())
 			if err != nil {
-				return err
+				continue
 			}
 			if fout == nil {
 				fout, err = os.OpenFile(hdr["name"],

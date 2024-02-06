@@ -43,7 +43,7 @@ func ParseKeywordLine(s string) (map[string]string, error) {
 	for {
 		i := strings.LastIndex(s, "=")
 		if i == 0 {
-			if isData(byte(s)) {
+			if len(s) < 2 || s[1] != 'y' {
 				return nil, ErrInvalidKeywordLine
 			}
 			words["type"] = s[2:]
