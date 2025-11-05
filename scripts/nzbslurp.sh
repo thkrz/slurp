@@ -12,11 +12,6 @@ usage() {
 	exit 1
 }
 
-unpack() {
-  # fancy unpacking
-	unrar x $(ls .part*.rar | head -n 1)
-}
-
 nzbget() {
 	targ=$(basename "$1" .nzb)
 	if [ ! -d "$targ" ]; then
@@ -24,16 +19,21 @@ nzbget() {
 	fi
 	cd "$targ"
 	$cmd ../"$1"
-	#unpack
 	cd ..
 }
 
 mflag=false
-while getopts ":m" opt; do
+while getopts ":emn:" opt; do
 	case $opt in
+  e)
+    cmd="$cmd -subject"
+    ;;
 	m)
 		mflag=true
 		;;
+  n)
+    cmd="$cmd -skip $OPTARG"
+    ;;
 	?)
 		usage
 		;;
