@@ -24,7 +24,7 @@ nzbget() {
 	fi
 	cd "$targ"
 	$cmd ../"$1"
-	unpack
+	#unpack
 	cd ..
 }
 

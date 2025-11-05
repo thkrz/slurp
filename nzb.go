@@ -42,7 +42,7 @@ type File struct {
 	Segments []Segment `xml:"segments>segment"`
 }
 
-func (f *File) Decode() error {
+func (f *File) Decode(subject bool) error {
 	var fout *os.File = nil
 
 	f.Sort()
@@ -57,19 +57,25 @@ func (f *File) Decode() error {
 		defer fin.Close()
 		scanner := bufio.NewScanner(fin)
 		for scanner.Scan() {
-			hdr, err := ParseKeywordLine(scanner.Text())
+			kw, err := ParseKeywordLine(scanner.Text())
 			if err != nil {
 				continue
 			}
 			if fout == nil {
-				fout, err = os.OpenFile(hdr["name"],
+				var name string
+				if subject {
+					name = f.Name()
+				} else {
+					name = kw["name"]
+				}
+				fout, err = os.OpenFile(name,
 					os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 				if err != nil {
 					return err
 				}
 				defer fout.Close()
 			}
-			if _, exists := hdr["part"]; !exists {
+			if _, exists := kw["part"]; !exists {
 				break
 			}
 		}
@@ -94,7 +100,11 @@ func (f *File) Name() string {
 			return strings.TrimSpace(f.Subject[i:j])
 		}
 	}
-	return ""
+	i = strings.LastIndex(f.Subject, " (")
+	if i > 0 {
+		return strings.TrimSpace(f.Subject[:i])
+	}
+	return f.Subject
 }
 
 func (f *File) Purge() error {

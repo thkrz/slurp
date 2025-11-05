@@ -12,7 +12,9 @@ import (
 var host string
 var num int
 var pass string
+var skip int
 var ssl bool
+var subject bool
 var user string
 
 var ch chan uint64
@@ -30,6 +32,12 @@ func fetch(s []Segment, g []string) {
 		log.Panic(err)
 	}
 	for i := range s {
+		// if fi, err := os.Stat(s[i].Name); err == nil {
+		// 	if uint64(fi.Size()) == s[i].Bytes {
+		// 		ch <- s[i].Bytes
+		// 		continue
+		// 	}
+		// }
 		for j := range g {
 			if err = c.Group(g[j]); err != nil {
 				continue
@@ -87,7 +95,9 @@ func init() {
 	flag.StringVar(&host, "host", "", "nntp server address")
 	flag.StringVar(&user, "user", "", "username")
 	flag.StringVar(&pass, "pass", "", "password")
+	flag.IntVar(&skip, "skip", 0, "skip number of files")
 	flag.BoolVar(&ssl, "ssl", false, "use ssl encryption")
+	flag.BoolVar(&subject, "subject", false, "use file name from subject")
 	flag.IntVar(&num, "threads", 1, "number of threads")
 
 	ch = make(chan uint64)
@@ -106,6 +116,9 @@ func main() {
 	N := len(obj.Files)
 	for i, f := range obj.Files {
 		fmt.Fprintf(os.Stderr, "[%d/%d] %s\n", i+1, N, f.Name())
+		if i < skip {
+			continue
+		}
 		n := len(f.Segments)
 		k := (n + num - 1) / num
 		for j := 0; j < n; j += k {
@@ -120,7 +133,7 @@ func main() {
 		wg.Wait()
 		func() {
 			defer f.Purge()
-			if err := f.Decode(); err != nil {
+			if err := f.Decode(subject); err != nil {
 				log.Panic(err)
 			}
 		}()
