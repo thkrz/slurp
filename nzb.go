@@ -42,7 +42,7 @@ type File struct {
 	Segments []Segment `xml:"segments>segment"`
 }
 
-func (f *File) Decode(subject bool) error {
+func (f *File) Decode(ext bool) error {
 	var fout *os.File = nil
 
 	f.Sort()
@@ -63,7 +63,7 @@ func (f *File) Decode(subject bool) error {
 			}
 			if fout == nil {
 				var name string
-				if subject {
+				if ext {
 					name = f.Name()
 				} else {
 					name = kw["name"]

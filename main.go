@@ -9,12 +9,12 @@ import (
 	"time"
 )
 
+var ext bool
 var host string
 var num int
 var pass string
 var skip int
 var ssl bool
-var subject bool
 var user string
 
 var ch chan uint64
@@ -92,12 +92,12 @@ func init() {
 	log.SetFlags(0)
 	log.SetPrefix("slurp: ")
 
+	flag.BoolVar(&ext, "ext", false, "use file name from subject")
 	flag.StringVar(&host, "host", "", "nntp server address")
 	flag.StringVar(&user, "user", "", "username")
 	flag.StringVar(&pass, "pass", "", "password")
 	flag.IntVar(&skip, "skip", 0, "skip number of files")
 	flag.BoolVar(&ssl, "ssl", false, "use ssl encryption")
-	flag.BoolVar(&subject, "subject", false, "use file name from subject")
 	flag.IntVar(&num, "threads", 1, "number of threads")
 
 	ch = make(chan uint64)
@@ -133,7 +133,7 @@ func main() {
 		wg.Wait()
 		func() {
 			defer f.Purge()
-			if err := f.Decode(subject); err != nil {
+			if err := f.Decode(ext); err != nil {
 				log.Panic(err)
 			}
 		}()
